@@ -2,6 +2,8 @@
 
 namespace slowdream\kit_laravel;
 
+use Illuminate\Support\Facades\Cache;
+
 class Kit
 {
     private $token;
@@ -43,7 +45,11 @@ class Kit
 
     public function getCityList()
     {
-        //return $this->sendRequest('get_city_list');
+        // Закешируем на 600 минут список городов, если кеша нет, то сделаем запрос и результат поместим в кеш.
+        $cityList = Cache::remember('CityList', 600, function () {
+            return $this->sendRequest('get_city_list');
+        });
+        // return $cityList;
         return [
           "CITY" => [
             [
@@ -63,13 +69,23 @@ class Kit
     }
 
 
-    public function isCity($city)
+    public function isCity(string $city)
     {
-        $data = $this->sendRequest('is_city', ['city' => $city]);
-        //return ($data == [0]) ? false : $data;
-        return [
-          "RU:66:0000006600:660000100000:Y"
-        ];
+
+        $cityData = Cache::remember('Kit_'.$city, 600, function () use ($city) {
+            $this->sendRequest('is_city', ['city' => $city]);
+        });
+        if($cityData == [0]) {
+            return false;
+        }
+        $data = explode(':', "RU:66:0000006600:660000100000:Y");
+        //$data = explode(':', $cityData[0]);
+        $vals = ['COUNTRY','REGION','TZONEID','ID','SR'];
+        $cityData = [];
+        foreach ($data as $key => $value){
+            $cityData[$vals[$key]] = $value;
+        };
+        return $cityData;
 
     }
 
@@ -101,6 +117,8 @@ class Kit
           'I_HAVE_DOC' => true,
           // Есть документы подтверждающие стоимость груза
         ];
+
+        // TODO: Добаивть проверку isCity
 
         //return $this->sendRequest('price_order', $data);
         return [
