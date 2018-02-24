@@ -1,0 +1,26 @@
+{
+    "name": "slowdream/kit_laravel",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "slowdream",
+            "email": "slowdream@yandex.ru"
+        }
+    ],
+    "require": {
+        "php": "^7.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "slowdream\\kit_laravel\\KitServiceProvider"
+            ]
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "slowdream\\kit_laravel\\": "src"
+        }
+    }
+}
