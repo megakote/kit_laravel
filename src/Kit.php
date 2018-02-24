@@ -41,12 +41,6 @@ class Kit
     }
 
 
-    public function test()
-    {
-        echo 'Awesome';
-    }
-
-
     public function getCityList()
     {
         //return $this->sendRequest('get_city_list');
@@ -80,7 +74,7 @@ class Kit
     }
 
 
-    public function priceOrder(array $data = [])
+    public function priceOrder(array $data)
     {
         [
           'WEIGHT' => 10,
