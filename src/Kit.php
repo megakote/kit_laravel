@@ -11,7 +11,7 @@ class Kit
 
     public function __construct()
     {
-        //$this->token = config('kit.token');
+        $this->token = config('kit.token');
     }
 
 
@@ -23,8 +23,6 @@ class Kit
         curl_setopt($curl, CURLOPT_POST, count($data));
         curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($data));
         curl_setopt($curl, CURLOPT_URL, $url);
-        //curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        //curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_HEADER, true);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 15);
@@ -35,10 +33,9 @@ class Kit
         $responseBody = substr($response, $header_size);
         curl_close($curl);
 
-
         return [
           'http_code' => $headerCode,
-          'data' => json_decode($responseBody)
+          'data' => json_decode($responseBody, true)
         ];
     }
 
@@ -49,91 +46,54 @@ class Kit
         $cityList = Cache::remember('CityList', 600, function () {
             return $this->sendRequest('get_city_list');
         });
-        // return $cityList;
-        return [
-          "CITY" => [
-            [
-              "ID" => "565500100000",
-              "OC" => "",
-              "SP" => "",
-              "SR" => "N",
-              "TP" => "гор.",
-              "NAME" => "Абдулино",
-              "TZONE" => "N",
-              "REGION" => "02",
-              "COUNTRY" => "RU",
-              "TZONEID" => "0000000212"
-            ]
-          ]
-        ];
+        return $cityList;
     }
 
 
     public function isCity(string $city)
     {
-
-        $cityData = Cache::remember('Kit_'.$city, 600, function () use ($city) {
-            $this->sendRequest('is_city', ['city' => $city]);
+        // Закешируем на 600 минут ответ сервера, если кеша нет, то сделаем запрос и результат поместим в кеш.
+        $cityData = Cache::remember('Kit_' . $city, 600, function () use ($city) {
+            $data = $this->sendRequest('is_city', ['city' => $city]);
+            return $data['data'];
         });
-        if($cityData == [0]) {
+
+        if ($cityData === [0]) {
             return false;
         }
-        $data = explode(':', "RU:66:0000006600:660000100000:Y");
-        //$data = explode(':', $cityData[0]);
-        $vals = ['COUNTRY','REGION','TZONEID','ID','SR'];
+        $data = explode(':', $cityData[0]);
+        $vals = ['COUNTRY', 'REGION', 'TZONEID', 'ID', 'SR'];
         $cityData = [];
-        foreach ($data as $key => $value){
+        foreach ($data as $key => $value) {
             $cityData[$vals[$key]] = $value;
         };
+
         return $cityData;
 
     }
 
 
-    public function priceOrder(array $data)
+    public function priceOrder(array $data, array $city_from, array $city_to)
     {
-        [
-          'WEIGHT' => 10,
-          // Вес груза в кг
-          'VOLUME' => 1.3,
-          // Объём груза в метрах кубических. Если переданы размеры (длина, ширины и высота), то объём считается исходя из размеров и данный параметр не учитывается.
-          'LENGTH' => 0,
-          //	Длина груза в сантиметрах (не обязательно)
-          'WIDTH' => 0,
-          // Ширина груза в сантиметрах (не обязательно)
-          'HEIGHT' => 0,
-          // Высота груза в сантиметрах (не обязательно)
-          'SLAND' => "RU",
-          //	Отправка из - Код страны (см. описание функции get_city_list)
-          'SZONE' => "0000000212",
-          // Отправка из - Транспортная зона (обязательно) (см. описание функции get_city_list поле TZONEID)
-          'SREGIO' => '02',
-          // Отправка из - Код региона (см. описание функции get_city_list)
-          'RLAND' => "RU",
-          'RZONE' => "0000000212",
-          'RREGIO' => '02',
-          'PRICE' => 1000,
-          // Стоимость груза
-          'I_HAVE_DOC' => true,
-          // Есть документы подтверждающие стоимость груза
-        ];
+        $data['I_HAVE_DOC'] = ($data['I_HAVE_DOC'] == 'on') ? true : false;
 
-        // TODO: Добаивть проверку isCity
+        if (isset($data['DELIVERY']))
+            $data['DELIVERY'] = ($data['DELIVERY'] == 'on') ? true : false;
 
-        //return $this->sendRequest('price_order', $data);
-        return [
-          "DAYS" => 1,
-          "PRICE" => [
-            "TOTAL" => "0.0",
-            "PICKUP" => "0.0",
-            "DELIVERY" => "0.0",
-            "TRANSFER" => "0.0"
-          ],
-          "E_RATE" => [
-            "KZT" => "5.0",
-            "RUB" => 1
-          ],
-          "E_WAERS" => "RUB"
-        ];
+        if (isset($data['PICKUP']))
+            $data['PICKUP'] = ($data['PICKUP'] == 'on') ? true : false;
+
+        $data['SLAND'] = $city_from['COUNTRY'];
+        $data['SCODE'] = $city_from['ID'];
+        $data['SZONE'] = $city_from['TZONEID'];
+        $data['SREGIO'] = $city_from['REGION'];
+
+        $data['RSLAND'] = $city_to['COUNTRY'];
+        $data['RCODE'] = $city_to['ID'];
+        $data['RZONE'] = $city_to['TZONEID'];
+        $data['RREGIO'] = $city_to['REGION'];
+
+        return $this->sendRequest('price_order', $data);
     }
+
 }
