@@ -82,14 +82,6 @@ class Kit
             return ['error' => 'Не работаем с '. $city_to];
         }
 
-        $data['I_HAVE_DOC'] = ($data['I_HAVE_DOC'] == 'on') ? true : false;
-
-        if (isset($data['DELIVERY']))
-            $data['DELIVERY'] = ($data['DELIVERY'] == 'on') ? true : false;
-
-        if (isset($data['PICKUP']))
-            $data['PICKUP'] = ($data['PICKUP'] == 'on') ? true : false;
-
         $data['SLAND'] = $city_from['COUNTRY'];
         $data['SCODE'] = $city_from['ID'];
         $data['SZONE'] = $city_from['TZONEID'];
