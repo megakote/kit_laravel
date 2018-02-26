@@ -73,8 +73,15 @@ class Kit
     }
 
 
-    public function priceOrder(array $data, array $city_from, array $city_to)
+    public function priceOrder(array $data, string $city_from, string $city_to)
     {
+        if (!$city_from = $this->isCity($city_from)) {
+            return ['error' => 'Не работаем с '. $city_from];
+        }
+        if (!$city_to = $this->isCity($city_to)) {
+            return ['error' => 'Не работаем с '. $city_to];
+        }
+
         $data['I_HAVE_DOC'] = ($data['I_HAVE_DOC'] == 'on') ? true : false;
 
         if (isset($data['DELIVERY']))
